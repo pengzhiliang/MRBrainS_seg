@@ -4,21 +4,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 # from torch.autograd import Variable
 
-def cross_entropy2d(input, target, weight=None, size_average=True):
-    n, c, h, w = input.size()
+def cross_entropy2d(inp, target, weight=None, size_average=True):
+    n, c, h, w = inp.size()
     nt, ht, wt = target.size()
 
-    # Handle inconsistent size between input and target
+    # Handle inconsistent size between inp and target
     if h > ht and w > wt: # upsample labels
         target = target.unsequeeze(1)
         target = F.upsample(target, size=(h, w), mode='nearest')
         target = target.sequeeze(1)
     elif h < ht and w < wt: # upsample images
-        input = F.upsample(input, size=(ht, wt), mode='bilinear')
+        inp = F.upsample(inp, size=(ht, wt), mode='bilinear')
     elif h != ht and w != wt:
         raise Exception("Only support upsampling")
 
-    log_p = F.log_softmax(input, dim=1)
+    log_p = F.log_softmax(inp, dim=1)
     log_p = log_p.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
     log_p = log_p[target.contiguous().view(-1, 1).repeat(1, c) >= 0]
     log_p = log_p.view(-1, c)
@@ -31,7 +31,7 @@ def cross_entropy2d(input, target, weight=None, size_average=True):
         loss /= mask.data.sum()
     return loss
 
-def dice_loss(input, target):
+def dice_loss(inp, target):
     target=target.cpu().unsqueeze(1)
     # target_bin=Variable(torch.zeros(1,9,target.shape[2],target.shape[3])).scatter_(1,target,1).cuda()
     target_bin=torch.zeros(1,9,target.shape[2],target.shape[3]).scatter_(1,target,1).cuda()
@@ -39,19 +39,19 @@ def dice_loss(input, target):
     target=target.squeeze(1).cuda()
     smooth = 1.
 
-    iflat = input.view(-1)
+    iflat = inp.view(-1)
     tflat = target_bin.view(-1)
     intersection = (iflat * tflat).sum()
     
     return 1 - ((2. * intersection + smooth) /
               (iflat.sum() + tflat.sum() + smooth))
 
-def weighted_loss(input,target_bin,weight,size_average=True):
-    n,c,h,w=input.size()
+def weighted_loss(inp,target_bin,weight,size_average=True):
+    n,c,h,w=inp.size()
     # NHWC
-    input=F.softmax(input,dim=1).transpose(1,2).transpose(2,3).contiguous().view(-1,c)
-    input=input[target_bin.view(n*h*w,c)>=0]
-    input=input.view(-1,c)
+    inp=F.softmax(inp,dim=1).transpose(1,2).transpose(2,3).contiguous().view(-1,c)
+    inp=inp[target_bin.view(n*h*w,c)>=0]
+    inp=inp.view(-1,c)
 
     weight=weight.transpose(1,2).transpose(2,3).contiguous()
     weight=weight.view(n*h*w,1).repeat(1,c)
@@ -64,18 +64,18 @@ def weighted_loss(input,target_bin,weight,size_average=True):
     target_bin=torch.from_numpy(target_bin).float()
     target_bin=Variable(target_bin.cuda())
     '''
-    loss=F.binary_cross_entropy(input,target_bin,weight=weight,size_average=False)
+    loss=F.binary_cross_entropy(inp,target_bin,weight=weight,size_average=False)
     if size_average:
         loss/=(target_bin>=0).data.sum()/c
     return loss
 
-def bootstrapped_cross_entropy2d(input, target, K, weight=None, size_average=True):
+def bootstrapped_cross_entropy2d(inp, target, K, weight=None, size_average=True):
 
-    batch_size = input.size()[0]
+    batch_size = inp.size()[0]
 
-    def _bootstrap_xentropy_single(input, target, K, weight=None, size_average=True):
-        n, c, h, w = input.size()
-        log_p = F.log_softmax(input, dim=1)
+    def _bootstrap_xentropy_single(inp, target, K, weight=None, size_average=True):
+        n, c, h, w = inp.size()
+        log_p = F.log_softmax(inp, dim=1)
         log_p = log_p.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
         log_p = log_p[target.view(n * h * w, 1).repeat(1, c) >= 0]
         log_p = log_p.view(-1, c)
@@ -92,7 +92,7 @@ def bootstrapped_cross_entropy2d(input, target, K, weight=None, size_average=Tru
     loss = 0.0
     # Bootstrap from each image not entire batch
     for i in range(batch_size):
-        loss += _bootstrap_xentropy_single(input=torch.unsqueeze(input[i], 0),
+        loss += _bootstrap_xentropy_single(inp=torch.unsqueeze(inp[i], 0),
                                            target=torch.unsqueeze(target[i], 0),
                                            K=K,
                                            weight=weight,

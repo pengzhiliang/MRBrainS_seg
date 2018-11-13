@@ -13,7 +13,7 @@ from torch.utils import data
 import cv2
 
 class MRBrainSDataset(data.Dataset):
-    def __init__(self, root, split='trainval', is_transform=True, augmentations=None, img_norm=False):
+    def __init__(self, root, split='train', is_transform=True, augmentations=None, img_norm=False):
         self.root = root
         self.is_transform = is_transform
         self.augmentations = augmentations

@@ -8,6 +8,7 @@ Created on Nov 13,2018
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchsummary import summary
 
 class fcn(nn.Module):
     def __init__(self,n_classes=9):
@@ -65,7 +66,7 @@ class fcn(nn.Module):
 
         concat_1_to_4=torch.cat([conv1_16,up_conv2_16,up_conv3_16,up_conv4_16], 1)
         score=self.score(concat_1_to_4)
-        return score
+        return score # [-1, 9, 256, 256]
 
     def init_vgg16_params(self, vgg16, copy_fc8=True):
         blocks = [self.conv_block1,
@@ -157,7 +158,9 @@ class fcn_dilated(nn.Module):
                     l2.bias.data = l1.bias.data
 
 if __name__=='__main__':
-    x=torch.Tensor(4,3,256,256)
+    # x=torch.Tensor(4,3,256,256)
+    # model=fcn(n_classes=9)
+    # y=model(x)
+    # print(y.shape)
     model=fcn(n_classes=9)
-    y=model(x)
-    print(y.shape)
+    summary(model.cuda(),(3,256,256))
