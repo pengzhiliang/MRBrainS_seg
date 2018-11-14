@@ -19,7 +19,7 @@ Mean IoU : 0.8053 Mean dice: 0.8921
 
 2. mask:
 
-![](./images/image_mask.png)
+![](./images/mask.png)
 
 3. 预测
 
