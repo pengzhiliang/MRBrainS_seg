@@ -45,6 +45,7 @@ class Score(object):
         acc_cls = np.nanmean(acc_cls)
         iu = np.diag(hist) / (hist.sum(axis=1) + hist.sum(axis=0) - np.diag(hist))
         mean_iu = np.nanmean(iu)
+        mean_dice=(mean_iu*2)/(mean_iu+1)
         freq = hist.sum(axis=1) / hist.sum()
         fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
         # cls_iu = dict(zip(range(self.n_classes), iu))
@@ -52,18 +53,17 @@ class Score(object):
 
         return (
             {
-                "Overall Acc: ": acc,
-                "Mean Acc : ": acc_cls,
-                "FreqW Acc : ": fwavacc,
-                "Mean IoU : ": mean_iu,
+                "Overall Acc: \t": acc,
+                "Mean Acc : \t": acc_cls,
+                "FreqW Acc : \t": fwavacc,
+                "Mean IoU : \t": mean_iu,
+                "Mean dice : \t": mean_dice,
             },
             cls_iu,
         )
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.n_classes, self.n_classes))
-
-
 
 class averageMeter(object):
     """Computes and stores the average and current value"""
